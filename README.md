@@ -1,5 +1,7 @@
 # LABORA — Discover Amazing Places
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/lostghos1/labora-web)
+
 An interactive map application for discovering and sharing locations across
 the Saxony–Czech border region, with a real Node.js backend, an
 admin-only editing/deletion system, custom categories, dark/light mode, and
