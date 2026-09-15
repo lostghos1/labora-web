@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: labora-web
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/locations
+    disk:
+      name: labora-db
+      mountPath: /opt/render/project/src/db
+      sizeGB: 1
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ADMIN_CODE
+        sync: false
+      - key: NODE_ENV
+        value: production

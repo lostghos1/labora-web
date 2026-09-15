@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LABORA - Discover Amazing Places</title>
+<meta name="description" content="Interactive map application for discovering and sharing amazing locations across the Saxony-Czech border region" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232F6FED'/%3E%3Cstop offset='1' stop-color='%237C5CFC'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M50 22c-12 0-22 9-22 21 0 16 22 35 22 35s22-19 22-35c0-12-10-21-22-21z' fill='white'/%3E%3Ccircle cx='50' cy='43' r='9' fill='%232F6FED'/%3E%3C/svg%3E" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <span class="brand-icon" data-icon="pin" data-icon-size="22"></span>
+      <div class="brand-text">
+        <span class="brand-badge">Student Project</span>
+        <span class="brand-title">Discover Amazing Places</span>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <label class="theme-switch" title="Toggle dark / light mode">
+        <input type="checkbox" id="themeToggle" />
+        <span class="theme-track"><span class="theme-thumb"></span></span>
+      </label>
+
+      <div class="lang-select">
+        <button id="langBtn" class="icon-btn lang-btn">🇬🇧 English</button>
+        <div id="langMenu" class="lang-menu hidden">
+          <div data-lang="en">🇬🇧 English</div>
+          <div data-lang="de">🇩🇪 Deutsch</div>
+          <div data-lang="cs">🇨🇿 Čeština</div>
+        </div>
+      </div>
+
+      <div class="mode-toggle">
+        <button id="viewModeBtn" class="mode-btn mode-view active"><span class="btn-icon" data-icon="eye"></span>View</button>
+        <button id="addModeBtn" class="mode-btn mode-add"><span class="btn-icon" data-icon="plus"></span>Add</button>
+        <button id="adminModeBtn" class="mode-btn mode-admin"><span class="btn-icon" data-icon="lock"></span>Admin</button>
+      </div>
+
+      <div class="status-cluster">
+        <span id="statusDot" class="status-dot mode-view"></span>
+        <span id="statusLabel" class="status-label">View</span>
+        <div id="filterTags" class="filter-tags"></div>
+        <span id="countPill" class="count-pill">0 locations</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" id="mainLayout">
+
+    <button id="sidebarToggle" class="sidebar-toggle-mobile">
+      <span class="btn-icon" data-icon="chevronDown"></span> Categories
+    </button>
+
+    <!-- ============ Sidebar: View mode (categories act as filters) ============ -->
+    <aside id="sidebarView" class="sidebar">
+      <div class="sidebar-title-row">
+        <span class="sidebar-glyph" data-icon="eye"></span>
+        <div>
+          <h2>View</h2>
+          <p class="sidebar-sub">Discover places</p>
+        </div>
+      </div>
+      <p class="sidebar-desc">Browse and explore amazing locations shared by the community</p>
+
+      <div class="search-box">
+        <span class="btn-icon" data-icon="search"></span>
+        <input id="searchInputView" placeholder="Search locations…" />
+      </div>
+
+      <div class="cat-heading">Categories</div>
+      <div id="categoryListView" class="cat-list"></div>
+      <button id="clearFiltersBtn" class="btn-ghost clear-filters-btn hidden"><span class="btn-icon" data-icon="x"></span>Clear Filter</button>
+    </aside>
+
+    <!-- ============ Sidebar: Admin mode ============ -->
+    <aside id="sidebarAdmin" class="sidebar hidden">
+      <div class="sidebar-title-row">
+        <span class="sidebar-glyph" data-icon="lock"></span>
+        <div>
+          <h2>Admin</h2>
+          <p class="sidebar-sub">Manage content</p>
+        </div>
+      </div>
+      <button id="adminLogoutBtn" class="link-btn admin-logout">Log out</button>
+
+      <div class="search-box">
+        <span class="btn-icon" data-icon="search"></span>
+        <input id="searchInputAdmin" placeholder="Search locations…" />
+      </div>
+
+      <div class="admin-section-head">
+        <span class="cat-heading">Categories</span>
+        <button id="showAddCategoryBtn" class="tiny-btn"><span class="btn-icon" data-icon="plus"></span>New</button>
+      </div>
+
+      <div id="addCategoryForm" class="inline-form hidden">
+        <input id="newCatLabel" placeholder="Category name (e.g. Nightlife)" />
+        <div class="row">
+          <select id="newCatIcon"></select>
+          <input id="newCatColor" type="color" value="#3B82F6" style="flex:0 0 46px; padding:2px;" />
+        </div>
+        <div class="row">
+          <button id="cancelAddCategoryBtn" class="btn-ghost">Cancel</button>
+          <button id="saveAddCategoryBtn" class="btn-primary">Add category</button>
+        </div>
+      </div>
+
+      <div id="categoryListAdmin" class="cat-list"></div>
+    </aside>
+
+    <!-- ============ Map ============ -->
+    <div id="mapWrap" class="map-wrap">
+      <div id="mapHint" class="map-hint hidden">
+        <span class="btn-icon" data-icon="target"></span> Click anywhere on the map to add a new location
+      </div>
+      <div id="map"></div>
+      <div id="loadingBanner" class="loading-banner">
+        <div class="spinner"></div>
+        <div>Loading your map…</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site">
+    <div class="footer-inner">
+      <div class="footer-head">
+        <span class="footer-head-icon" data-icon="globe" data-icon-size="18"></span>
+        <h5>Cross-Border Innovation Project</h5>
+      </div>
+      <p>
+        This application is part of a cross-border cooperation project between Saxony and Czech Republic,
+        supported by the European Union.
+      </p>
+      <div class="badge-row">
+        <span class="pill-badge"><span class="btn-icon" data-icon="graduation" data-icon-size="13"></span>Student Project</span>
+        <span class="pill-badge"><span class="btn-icon" data-icon="heart" data-icon-size="13"></span>Supported by EU</span>
+        <span class="pill-badge">Saxony - Czech Republic Cross-Border Project</span>
+      </div>
+      <p class="footer-link-line">
+        <span class="btn-icon" data-icon="externalLink" data-icon-size="13"></span>
+        <a href="https://www.laboraczech.cz/" target="_blank" rel="noopener noreferrer">LABORA 2.0 - Interreg Sachsen-Tschechien</a>
+      </p>
+      <div class="partner-box">
+        <span class="partner-badge">SECURITEX GROUP</span>
+        <span class="partner-badge">LABORA</span>
+        <span class="partner-badge">INTERREG</span>
+        <span class="partner-badge">WIRTSCHAFTSFÖRDERUNG ERZGEBIRGE</span>
+        <span class="partner-badge">OKRESNÍ HOSPODÁŘSKÁ KOMORA</span>
+        <span class="partner-badge">SPS</span>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 LABORA - Student Application Project</span>
+        <span>Powered by Node.js &amp; SQLite (encrypted) <span class="btn-icon" data-icon="heart" data-icon-size="12"></span> Made with love</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- ============ Add New Location — multi-step wizard ============ -->
+<div id="addWizardOverlay" class="overlay hidden">
+  <div class="wizard-panel">
+    <div class="wizard-head">
+      <div class="modal-title-icon"><span class="wizard-plus-badge">+</span> <span>Add New Location</span></div>
+      <button id="wizardCloseBtn" class="x-btn" data-icon="x"></button>
+    </div>
+
+    <div class="wizard-info-box">
+      <div>📍 Adding location at: <span id="wizCoords"></span></div>
+      <div>🌐 This location will be visible to all users worldwide</div>
+    </div>
+
+    <div class="wizard-stepper">
+      <div class="wizard-step-dot" data-step="1">1</div>
+      <div class="wizard-step-line" data-line="1"></div>
+      <div class="wizard-step-dot" data-step="2">2</div>
+      <div class="wizard-step-line" data-line="2"></div>
+      <div class="wizard-step-dot" data-step="3">3</div>
+      <div class="wizard-step-line" data-line="3"></div>
+      <div class="wizard-step-dot" data-step="4">4</div>
+    </div>
+
+    <!-- Step 1: Basic Information -->
+    <div class="wizard-step" data-wizard-step="1">
+      <div class="wizard-step-header">
+        <div class="wizard-step-icon" data-icon="pin"></div>
+        <h3>Basic Information</h3>
+        <p>Let's start with the essentials</p>
+      </div>
+      <label class="field-label">Location Name *</label>
+      <input id="wizName" maxlength="100" placeholder="Enter a name for this location" />
+      <div class="char-count"><span id="wizNameCount">0</span>/100</div>
+      <label class="field-label">Category</label>
+      <select id="wizCategory"></select>
+    </div>
+
+    <!-- Step 2: Rate This Location -->
+    <div class="wizard-step hidden" data-wizard-step="2">
+      <div class="wizard-step-header">
+        <div class="wizard-step-icon" data-icon="star"></div>
+        <h3>Rate This Location</h3>
+        <p>Help others know what to expect (optional)</p>
+      </div>
+      <label class="field-label">Overall Rating</label>
+      <div class="wizard-box">
+        <div id="wizRatingStars" class="star-picker star-picker-lg" data-value="0"></div>
+        <div id="wizRatingLabel" class="wizard-box-label">No rating</div>
+      </div>
+      <label class="field-label">Terrain Difficulty</label>
+      <div class="wizard-box">
+        <div id="wizDifficultyPicker" class="difficulty-picker"></div>
+        <div id="wizDifficultyLabel" class="wizard-box-label">Not set</div>
+      </div>
+    </div>
+
+    <!-- Step 3: Add a Photo -->
+    <div class="wizard-step hidden" data-wizard-step="3">
+      <div class="wizard-step-header">
+        <div class="wizard-step-icon" data-icon="camera"></div>
+        <h3>Add a Photo</h3>
+        <p>Show others what this place looks like (optional)</p>
+      </div>
+      <label class="field-label">Upload Photo</label>
+      <label id="wizPhotoDrop" class="wizard-photo-drop">
+        <span class="btn-icon" data-icon="camera" data-icon-size="22"></span>
+        <span>Upload Photo</span>
+        <span class="wizard-photo-hint">PNG, JPG up to 10MB</span>
+        <input id="wizPhotoInput" type="file" accept="image/*" class="hidden" />
+      </label>
+      <div id="wizPhotoPreviewWrap" class="photo-preview-wrap hidden">
+        <img id="wizPhotoPreview" class="photo-preview" />
+        <button id="wizPhotoRemoveBtn" class="tiny-btn">Remove</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Add Details -->
+    <div class="wizard-step hidden" data-wizard-step="4">
+      <div class="wizard-step-header">
+        <div class="wizard-step-icon" data-icon="pencil"></div>
+        <h3>Add Details</h3>
+        <p>Tell others about this location</p>
+      </div>
+      <label class="field-label">Description</label>
+      <textarea id="wizDesc" maxlength="500" placeholder="What makes this location special? Share your experience…"></textarea>
+      <div class="char-count"><span id="wizDescCount">0</span>/500</div>
+      <p class="sidebar-sub">Description is optional, but it helps others understand what makes this place special.</p>
+    </div>
+
+    <div class="row wizard-nav-row">
+      <button id="wizCancelBtn" class="btn-ghost">Cancel</button>
+      <button id="wizPrevBtn" class="btn-ghost hidden"><span class="btn-icon" data-icon="chevronRight" style="transform:rotate(180deg);display:inline-flex;"></span>Previous</button>
+      <button id="wizNextBtn" class="btn-primary">Next<span class="btn-icon" data-icon="chevronRight"></span></button>
+      <button id="wizSubmitBtn" class="btn-primary hidden">Add Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin login modal -->
+<div id="adminOverlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title-icon"><span data-icon="lock"></span> <span>Admin Access</span></div>
+      <button id="adminModalCloseBtn" class="x-btn" data-icon="x"></button>
+    </div>
+    <p>Enter the admin code to access administrative features.</p>
+    <label class="field-label">Admin Code</label>
+    <input id="adminCode" type="password" placeholder="Enter admin code" autocomplete="current-password" />
+    <div id="adminLoginError" class="form-error hidden"></div>
+    <div class="row">
+      <button id="adminLoginBtn" class="btn-admin-gradient">Access Admin Mode</button>
+      <button id="adminCancelBtn" class="btn-ghost">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Location Details slide-over panel (non-blocking: map stays usable behind it) -->
+<div id="detailsOverlay" class="details-overlay hidden">
+  <div id="detailsPanel" class="details-panel">
+    <div class="details-head">
+      <div class="modal-title-icon"><span data-icon="pin"></span> <span>Location Details</span></div>
+      <div class="details-head-actions">
+        <button id="detailsEditBtn" class="x-btn hidden" data-icon="pencil" title="Edit"></button>
+        <button id="detailsDeleteBtn" class="x-btn hidden" data-icon="trash" title="Delete"></button>
+        <button id="detailsCloseBtn" class="x-btn" data-icon="x" title="Close"></button>
+      </div>
+    </div>
+
+    <div id="detailsViewBody">
+      <img id="detailsPhoto" class="details-photo hidden" />
+      <h3 id="detailsName"></h3>
+      <p id="detailsCategory" class="details-category"></p>
+      <p id="detailsCoords" class="details-coords"></p>
+
+      <div class="row details-nav-row">
+        <button id="detailsNavigateBtn" class="btn-primary"><span class="btn-icon" data-icon="navigation"></span>Navigate Here</button>
+        <button id="detailsMapsBtn" class="btn-ghost"><span class="btn-icon" data-icon="externalLink"></span>View in Maps</button>
+      </div>
+
+      <div id="detailsRatingSection" class="details-block hidden">
+        <div class="field-label">Overall Rating</div>
+        <div id="detailsStars" class="star-display"></div>
+      </div>
+
+      <div id="detailsDifficultySection" class="details-block hidden">
+        <div class="field-label">Terrain Difficulty</div>
+        <div id="detailsDifficultyIcons" class="difficulty-row"></div>
+        <div id="detailsDifficultyLabel" class="sidebar-sub"></div>
+      </div>
+
+      <div id="detailsDescSection" class="details-block hidden">
+        <div class="field-label">Description</div>
+        <p id="detailsDesc" class="sidebar-desc"></p>
+      </div>
+
+      <div class="details-meta">
+        <span class="btn-icon" data-icon="calendar"></span>
+        <span id="detailsAdded"></span>
+      </div>
+
+      <div class="details-divider"></div>
+
+      <div class="details-comments-head">
+        <span class="btn-icon" data-icon="messageCircle"></span>
+        <span>Comments (<span id="commentsCount">0</span>)</span>
+      </div>
+      <div id="commentsList" class="comments-list"></div>
+
+      <div class="comment-form">
+        <div class="field-label-sm">Add a Comment</div>
+        <label class="field-label-sm">Your Name</label>
+        <input id="commentName" placeholder="Enter your name" maxlength="60" />
+        <label class="field-label-sm">Comment</label>
+        <textarea id="commentText" placeholder="Share your experience about this location…" maxlength="500"></textarea>
+        <div class="char-count"><span id="commentCharCount">0</span>/500</div>
+        <button id="commentSubmitBtn" class="btn-primary full-width"><span class="btn-icon" data-icon="navigation"></span>Add a Comment</button>
+      </div>
+    </div>
+
+    <div id="detailsEditBody" class="hidden">
+      <label class="field-label-sm">Name</label>
+      <input id="editName" placeholder="Name" />
+      <label class="field-label-sm">Description</label>
+      <textarea id="editDesc" placeholder="Description"></textarea>
+      <label class="field-label-sm">Category</label>
+      <select id="editCategory"></select>
+
+      <label class="field-label-sm">Rating</label>
+      <div id="editRatingStars" class="star-picker" data-value="0"></div>
+
+      <label class="field-label-sm">Terrain difficulty</label>
+      <div id="editDifficultyPicker" class="difficulty-picker"></div>
+
+      <label class="field-label-sm">Photo</label>
+      <input id="editPhotoInput" type="file" accept="image/*" />
+      <div id="editPhotoPreviewWrap" class="photo-preview-wrap hidden">
+        <img id="editPhotoPreview" class="photo-preview" />
+        <button id="editPhotoRemoveBtn" class="tiny-btn">Remove</button>
+      </div>
+
+      <div class="row">
+        <button id="editCancelBtn" class="btn-ghost">Cancel</button>
+        <button id="editSaveBtn" class="btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
