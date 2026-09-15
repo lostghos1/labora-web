@@ -18,8 +18,6 @@ encrypted data at rest.
   Requires **Node.js 22.13+**.
 - **Auth**: a single admin code (bcrypt-hashed), matching the original app's
   "Admin Access" flow, with JWT sessions.
-- **Encryption**: location data is encrypted at rest — see "Encryption" below.
-
 
 ## Encryption
 
